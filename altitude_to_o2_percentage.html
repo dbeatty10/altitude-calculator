@@ -29,7 +29,7 @@
 <body>
   <h1>Altitude to Oxygen Percentage Calculator</h1>
   <p>Enter the altitude in feet:</p>
-  <input type="number" id="altitude" placeholder="Altitude in feet">
+  <input type="number" id="altitude" placeholder="Altitude in feet" onkeypress="if(event.key==='Enter') convertAltitude()">
   <button onclick="convertAltitude()">Convert</button>
   <p>Effective Oxygen Percentage: <span id="result"></span></p>
 </body>
