@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Altitude to Oxygen Percentage Calculator</title>
+  <script>
+    function convertAltitude() {
+      // Get the altitude value from the input and convert it to a number.
+      var altitude = parseFloat(document.getElementById("altitude").value);
+      
+      // Validate the input.
+      if (isNaN(altitude) || altitude < 0 || altitude > 145442) {
+        alert("Please enter a valid altitude between 0 and 145442 feet.");
+        return;
+      }
+      
+      // Calculate the effective oxygen percentage using the formula:
+      // f = 20.9 * (1 - (h/145442))^5.2559
+      var oxygenPercentage = 20.9 * Math.pow(1 - (altitude / 145442), 5.2559);
+      
+      // Round the result to one decimal place.
+      oxygenPercentage = Math.round(oxygenPercentage * 10) / 10;
+      
+      // Display the result.
+      document.getElementById("result").innerText = oxygenPercentage + "%";
+    }
+  </script>
+</head>
+<body>
+  <h1>Altitude to Oxygen Percentage Calculator</h1>
+  <p>Enter the altitude in feet:</p>
+  <input type="number" id="altitude" placeholder="Altitude in feet">
+  <button onclick="convertAltitude()">Convert</button>
+  <p>Effective Oxygen Percentage: <span id="result"></span></p>
+</body>
+</html>
