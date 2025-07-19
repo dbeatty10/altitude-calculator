@@ -6,7 +6,7 @@ Access the web-based calculators here:
 
 ## Overview
 
-This project provides a suite of web-based calculators to convert between altitude and oxygen percentage. These tools help you understand the relationship between elevation and effective oxygen availability at different altitudes.
+This project provides a suite of web-based calculators to convert between altitude and oxygen percentage. These tools help you understand the relationship between elevation and effective oxygen availability at different altitudes, including equivalency calculations for different gas mixtures.
 
 ## Use Cases
 
@@ -27,6 +27,7 @@ Plan training at altitude or simulate altitude conditions:
 |------------|-------------|
 | [Altitude to Oxygen Percentage](https://dbeatty10.github.io/altitude-calculator/altitude_to_o2_percentage.html) | Converts altitude in feet to effective oxygen percentage using atmospheric pressure calculations. |
 | [Oxygen Percentage to Altitude](https://dbeatty10.github.io/altitude-calculator/o2_percentage_to_altitude.html) | Converts effective oxygen percentage to equivalent altitude in feet. |
+| [Altitude-O₂ Equivalency Calculator](https://dbeatty10.github.io/altitude-calculator/altitude_o2_to_altitude.html) | Calculate equivalent altitude for 20.9% air based on measured altitude and oxygen percentage of gas mixture. |
 
 ## How to Use
 

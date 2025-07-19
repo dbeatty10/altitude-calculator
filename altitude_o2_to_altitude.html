@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Altitude-O₂ Equivalency Calculator</title>
+  <script>
+    function calculateEquivalentAltitude() {
+      // Get input values
+      var altitude = parseFloat(document.getElementById("altitude").value);
+      var o2Percent = parseFloat(document.getElementById("o2percent").value);
+      
+      // Validate inputs
+      if (isNaN(altitude) || altitude < 0 || altitude > 60000) {
+        alert("Please enter a valid altitude between 0 and 60,000 feet.");
+        return;
+      }
+      if (isNaN(o2Percent) || o2Percent <= 0 || o2Percent > 100) {
+        alert("Please enter a valid oxygen percentage between 0 and 100.");
+        return;
+      }
+      
+      // Constants for standard atmosphere model
+      var P0 = 760;        // mmHg at sea level
+      var Htop = 145442;   // ft, scale height
+      var expo = 5.2559;   // exponent from US Standard Atmosphere
+      
+      // Calculate barometric pressure at given altitude
+      var P_meas = P0 * Math.pow(1 - (altitude / Htop), expo);
+      
+      // Calculate partial pressure of oxygen
+      var pO2 = P_meas * (o2Percent / 100);
+      
+      // Calculate equivalent pressure for 20.9% oxygen
+      var P_equiv = pO2 / 0.209;
+      
+      // Calculate equivalent altitude
+      var h_equiv = Htop * (1 - Math.pow(P_equiv / P0, 1 / expo));
+      
+      // Round the result to the nearest 100 feet.
+      h_equiv = Math.round(h_equiv / 100) * 100;
+      
+      // Display result
+      document.getElementById("result").innerText = h_equiv + " feet";
+    }
+  </script>
+</head>
+<body>
+  <h1>Altitude-O₂ Equivalency Calculator</h1>
+  <p>Enter the altitude of measurement (feet):</p>
+  <input type="number" id="altitude" placeholder="Altitude in feet" onkeypress="if(event.key==='Enter') calculateEquivalentAltitude()">
+  <p>Enter the measured O₂ percentage of gas mixture:</p>
+  <input type="number" id="o2percent" step="0.1" placeholder="Oxygen percentage" onkeypress="if(event.key==='Enter') calculateEquivalentAltitude()">
+  <button onclick="calculateEquivalentAltitude()">Convert</button>
+  <p>Equivalent Altitude for 20.9% Air: <span id="result"></span></p>
+</body>
+</html>
