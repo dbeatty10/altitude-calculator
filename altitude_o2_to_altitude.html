@@ -3,14 +3,81 @@
 <head>
   <meta charset="utf-8">
   <title>Altitude-O₂ Equivalency Calculator</title>
+  <style>
+    .unit-toggle {
+      margin: 20px 0;
+      text-align: center;
+    }
+    .toggle-group {
+      display: inline-flex;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .toggle-button {
+      background: #f8f8f8;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      border-right: 1px solid #ddd;
+    }
+    .toggle-button:last-child {
+      border-right: none;
+    }
+    .toggle-button.active {
+      background: #007acc;
+      color: white;
+    }
+    .toggle-button:hover:not(.active) {
+      background: #e8e8e8;
+    }
+  </style>
   <script>
+    let isMetric = false;
+
+    function setUnits(metric) {
+      isMetric = metric;
+      localStorage.setItem('unitPreference', isMetric ? 'metric' : 'imperial');
+      updateUI();
+    }
+
+    function updateUI() {
+      const imperialBtn = document.getElementById('imperialBtn');
+      const metricBtn = document.getElementById('metricBtn');
+      const elevationLabel = document.getElementById('elevationLabel');
+      const elevationInput = document.getElementById('altitude');
+      
+      if (isMetric) {
+        imperialBtn.classList.remove('active');
+        metricBtn.classList.add('active');
+        elevationLabel.textContent = 'Enter the local site elevation (meters):';
+        elevationInput.placeholder = 'Elevation in meters';
+      } else {
+        imperialBtn.classList.add('active');
+        metricBtn.classList.remove('active');
+        elevationLabel.textContent = 'Enter the local site elevation (feet):';
+        elevationInput.placeholder = 'Elevation in feet';
+      }
+    }
+
     function calculateEquivalentAltitude() {
       // ───── 1.  Get & validate inputs ──────────────────────────────
-      const alt_ft   = parseFloat(document.getElementById("altitude").value);    // local elevation (G2)
+      let alt_ft   = parseFloat(document.getElementById("altitude").value);    // local elevation
       const o2_pct   = parseFloat(document.getElementById("o2percent").value);   // FiO2 of mix (F7) ‑‑ in %
 
-      if (isNaN(alt_ft) || alt_ft < 0 || alt_ft > 60000) {
-        alert("Please enter a valid altitude between 0 and 60 000 ft."); return;
+      // Convert to feet if metric input
+      if (isMetric) {
+        alt_ft = alt_ft * 3.28084; // meters to feet
+        if (isNaN(alt_ft) || alt_ft < 0 || alt_ft > 60000) {
+          alert("Please enter a valid elevation between 0 and ~18,300 meters."); return;
+        }
+      } else {
+        if (isNaN(alt_ft) || alt_ft < 0 || alt_ft > 60000) {
+          alert("Please enter a valid elevation between 0 and 60,000 ft."); return;
+        }
       }
       if (isNaN(o2_pct) || o2_pct <= 0 || o2_pct > 100) {
         alert("Please enter a valid oxygen percentage (0–100)."); return;
@@ -23,7 +90,7 @@
       const C1          = 1100953;          // 3280.84 /(2*0.00149)
       const SQ_COEF_A   = 0.012365;         // 0.1112²
       const SQ_COEF_B   = 0.00596;          // 4*0.00149
-      const OFFSET_FT   = -28;              // zero‑offset so sea level → 0 ft
+      const OFFSET_FT   = -28;              // zero‑offset so sea level → 0 ft
       const LN_SCALE    = 1013.5 * 10000 * 0.00000358196; // 36.309…
 
       // ───── 3.  Calculate local barometric pressure (E9) in hPa ────
@@ -36,16 +103,43 @@
       const innerSqrt  = SQ_COEF_A + SQ_COEF_B * (6.63268 - lnTerm);
       const h_equiv_ft = C1 * (-0.1112 + Math.sqrt(innerSqrt)) + OFFSET_FT;
 
-      // ───── 5.  Round (optional) & output ──────────────────────────
-      const h_rounded  = Math.round(h_equiv_ft / 100) * 100;  // nearest 100 ft
-      document.getElementById("result").innerText = h_rounded.toLocaleString() + " ft";
+      // ───── 5.  Round & output ──────────────────────────────────────
+      let h_rounded;
+      let unit_suffix;
+      
+      if (isMetric) {
+        const h_equiv_m = h_equiv_ft / 3.28084; // convert to meters
+        h_rounded = Math.round(h_equiv_m / 50) * 50; // nearest 50 meters
+        unit_suffix = " m";
+      } else {
+        h_rounded = Math.round(h_equiv_ft / 100) * 100; // nearest 100 ft
+        unit_suffix = " ft";
+      }
+      
+      document.getElementById("result").innerText = h_rounded.toLocaleString() + unit_suffix;
+    }
+
+    window.onload = function() {
+      // Load saved preference
+      const saved = localStorage.getItem('unitPreference');
+      if (saved === 'metric') {
+        isMetric = true;
+      }
+      updateUI();
     }
   </script>
 </head>
 <body>
-  <h1>Altitude‑O₂ Equivalency Calculator</h1>
+  <h1>Altitude‑O₂ Equivalency Calculator</h1>
 
-  <p>Enter the local site elevation (feet):</p>
+  <div class="unit-toggle">
+    <div class="toggle-group">
+      <button id="imperialBtn" class="toggle-button active" onclick="setUnits(false)">Imperial (ft)</button>
+      <button id="metricBtn" class="toggle-button" onclick="setUnits(true)">Metric (m)</button>
+    </div>
+  </div>
+
+  <p id="elevationLabel">Enter the local site elevation (feet):</p>
   <input type="number"
          id="altitude"
          placeholder="Elevation in feet"

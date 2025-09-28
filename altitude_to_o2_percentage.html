@@ -3,15 +3,86 @@
 <head>
   <meta charset="utf-8">
   <title>Altitude to Oxygen Percentage Calculator</title>
+  <style>
+    .unit-toggle {
+      margin: 20px 0;
+      text-align: center;
+    }
+    .toggle-group {
+      display: inline-flex;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .toggle-button {
+      background: #f8f8f8;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      border-right: 1px solid #ddd;
+    }
+    .toggle-button:last-child {
+      border-right: none;
+    }
+    .toggle-button.active {
+      background: #007acc;
+      color: white;
+    }
+    .toggle-button:hover:not(.active) {
+      background: #e8e8e8;
+    }
+  </style>
   <script>
-    function convertAltitude() {
-      // Get the altitude value from the input and convert it to a number.
-      var altitude = parseFloat(document.getElementById("altitude").value);
+    let isMetric = false;
+
+    function setUnits(metric) {
+      isMetric = metric;
+      localStorage.setItem('unitPreference', isMetric ? 'metric' : 'imperial');
+      updateUI();
+    }
+
+    function updateUI() {
+      const imperialBtn = document.getElementById('imperialBtn');
+      const metricBtn = document.getElementById('metricBtn');
+      const label = document.getElementById('inputLabel');
+      const input = document.getElementById('altitude');
       
-      // Validate the input.
-      if (isNaN(altitude) || altitude < 0 || altitude > 145442) {
-        alert("Please enter a valid altitude between 0 and 145442 feet.");
+      if (isMetric) {
+        imperialBtn.classList.remove('active');
+        metricBtn.classList.add('active');
+        label.textContent = 'Enter the altitude in meters:';
+        input.placeholder = 'Altitude in meters';
+      } else {
+        imperialBtn.classList.add('active');
+        metricBtn.classList.remove('active');
+        label.textContent = 'Enter the altitude in feet:';
+        input.placeholder = 'Altitude in feet';
+      }
+    }
+
+    function convertAltitude() {
+      let altitude = parseFloat(document.getElementById("altitude").value);
+      
+      if (isNaN(altitude) || altitude < 0) {
+        alert("Please enter a valid altitude.");
         return;
+      }
+      
+      // Convert to feet if metric input
+      if (isMetric) {
+        altitude = altitude * 3.28084; // meters to feet
+        if (altitude > 145442) {
+          alert("Please enter a valid altitude (maximum ~44,300 meters).");
+          return;
+        }
+      } else {
+        if (altitude > 145442) {
+          alert("Please enter a valid altitude between 0 and 145,442 feet.");
+          return;
+        }
       }
       
       // Calculate the effective oxygen percentage using the formula:
@@ -24,11 +95,28 @@
       // Display the result.
       document.getElementById("result").innerText = oxygenPercentage + "%";
     }
+
+    window.onload = function() {
+      // Load saved preference
+      const saved = localStorage.getItem('unitPreference');
+      if (saved === 'metric') {
+        isMetric = true;
+      }
+      updateUI();
+    }
   </script>
 </head>
 <body>
   <h1>Altitude to Oxygen Percentage Calculator</h1>
-  <p>Enter the altitude in feet:</p>
+  
+  <div class="unit-toggle">
+    <div class="toggle-group">
+      <button id="imperialBtn" class="toggle-button active" onclick="setUnits(false)">Imperial (ft)</button>
+      <button id="metricBtn" class="toggle-button" onclick="setUnits(true)">Metric (m)</button>
+    </div>
+  </div>
+  
+  <p id="inputLabel">Enter the altitude in feet:</p>
   <input type="number" id="altitude" placeholder="Altitude in feet" onkeypress="if(event.key==='Enter') convertAltitude()">
   <button onclick="convertAltitude()">Convert</button>
   <p>Effective Oxygen Percentage: <span id="result"></span></p>
