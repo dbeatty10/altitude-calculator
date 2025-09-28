@@ -3,17 +3,79 @@
 <head>
   <meta charset="utf-8">
   <title>Elevation & Equivalent Altitude to O₂ Calculator</title>
+  <style>
+    .unit-toggle {
+      margin: 20px 0;
+      text-align: center;
+    }
+    .toggle-switch {
+      background: #ddd;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    .toggle-switch.active {
+      background: #007acc;
+      color: white;
+    }
+  </style>
   <script>
+    let isMetric = false;
+
+    function toggleUnits() {
+      isMetric = !isMetric;
+      localStorage.setItem('unitPreference', isMetric ? 'metric' : 'imperial');
+      updateUI();
+    }
+
+    function updateUI() {
+      const toggle = document.getElementById('unitToggle');
+      const elevationLabel = document.getElementById('elevationLabel');
+      const elevationInput = document.getElementById('altitude');
+      const equivLabel = document.getElementById('equivLabel');
+      const equivInput = document.getElementById('equiv_altitude');
+      
+      if (isMetric) {
+        toggle.textContent = 'Metric (m)';
+        toggle.classList.add('active');
+        elevationLabel.textContent = 'Enter the local site elevation (meters):';
+        elevationInput.placeholder = 'Local elevation in meters';
+        equivLabel.textContent = 'Enter the equivalent altitude (meters):';
+        equivInput.placeholder = 'Equivalent altitude in meters';
+      } else {
+        toggle.textContent = 'Imperial (ft)';
+        toggle.classList.remove('active');
+        elevationLabel.textContent = 'Enter the local site elevation (feet):';
+        elevationInput.placeholder = 'Local elevation in feet';
+        equivLabel.textContent = 'Enter the equivalent altitude (feet):';
+        equivInput.placeholder = 'Equivalent altitude in feet';
+      }
+    }
     function calculateO2Percentage() {
       // ───── 1.  Get & validate inputs ──────────────────────────────
-      const alt_ft      = parseFloat(document.getElementById("altitude").value);       // local elevation
-      const equiv_alt_ft = parseFloat(document.getElementById("equiv_altitude").value); // equivalent altitude
+      let alt_ft      = parseFloat(document.getElementById("altitude").value);       // local elevation
+      let equiv_alt_ft = parseFloat(document.getElementById("equiv_altitude").value); // equivalent altitude
 
-      if (isNaN(alt_ft) || alt_ft < 0 || alt_ft > 60000) {
-        alert("Please enter a valid local elevation between 0 and 60,000 ft."); return;
-      }
-      if (isNaN(equiv_alt_ft) || equiv_alt_ft < 0 || equiv_alt_ft > 60000) {
-        alert("Please enter a valid equivalent altitude between 0 and 60,000 ft."); return;
+      // Convert to feet if metric input
+      if (isMetric) {
+        alt_ft = alt_ft * 3.28084; // meters to feet
+        equiv_alt_ft = equiv_alt_ft * 3.28084; // meters to feet
+        if (isNaN(alt_ft) || alt_ft < 0 || alt_ft > 60000) {
+          alert("Please enter a valid local elevation between 0 and ~18,300 meters."); return;
+        }
+        if (isNaN(equiv_alt_ft) || equiv_alt_ft < 0 || equiv_alt_ft > 60000) {
+          alert("Please enter a valid equivalent altitude between 0 and ~18,300 meters."); return;
+        }
+      } else {
+        if (isNaN(alt_ft) || alt_ft < 0 || alt_ft > 60000) {
+          alert("Please enter a valid local elevation between 0 and 60,000 ft."); return;
+        }
+        if (isNaN(equiv_alt_ft) || equiv_alt_ft < 0 || equiv_alt_ft > 60000) {
+          alert("Please enter a valid equivalent altitude between 0 and 60,000 ft."); return;
+        }
       }
 
       // ───── 2.  Pre‑declare constants ───────────────────────────────
@@ -41,18 +103,31 @@
       const o2_rounded = Math.round(o2_pct * 10) / 10;  // nearest 0.1%
       document.getElementById("result").innerText = o2_rounded + "%";
     }
+
+    window.onload = function() {
+      // Load saved preference
+      const saved = localStorage.getItem('unitPreference');
+      if (saved === 'metric') {
+        isMetric = true;
+      }
+      updateUI();
+    }
   </script>
 </head>
 <body>
   <h1>Elevation & Equivalent Altitude to O₂ Calculator</h1>
 
-  <p>Enter the local site elevation (feet):</p>
+  <div class="unit-toggle">
+    <button id="unitToggle" class="toggle-switch" onclick="toggleUnits()">Imperial (ft)</button>
+  </div>
+
+  <p id="elevationLabel">Enter the local site elevation (feet):</p>
   <input type="number"
          id="altitude"
          placeholder="Local elevation in feet"
          onkeypress="if(event.key==='Enter') calculateO2Percentage()">
 
-  <p>Enter the equivalent altitude (feet):</p>
+  <p id="equivLabel">Enter the equivalent altitude (feet):</p>
   <input type="number"
          id="equiv_altitude"
          placeholder="Equivalent altitude in feet"
