@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Elevation & Equivalent Altitude to O₂ Calculator</title>
+  <script>
+    function calculateO2Percentage() {
+      // ───── 1.  Get & validate inputs ──────────────────────────────
+      const alt_ft      = parseFloat(document.getElementById("altitude").value);       // local elevation
+      const equiv_alt_ft = parseFloat(document.getElementById("equiv_altitude").value); // equivalent altitude
+
+      if (isNaN(alt_ft) || alt_ft < 0 || alt_ft > 60000) {
+        alert("Please enter a valid local elevation between 0 and 60,000 ft."); return;
+      }
+      if (isNaN(equiv_alt_ft) || equiv_alt_ft < 0 || equiv_alt_ft > 60000) {
+        alert("Please enter a valid equivalent altitude between 0 and 60,000 ft."); return;
+      }
+
+      // ───── 2.  Pre‑declare constants ───────────────────────────────
+      const FT_PER_KM   = 3280.84;          // unit converter
+      const P0_HPA      = 1013.25;          // sea‑level pressure
+      const TORR2HPA    = P0_HPA / 760.0;   // (1013.25 / 760)
+      const OFFSET_FT   = -28;              // zero‑offset so sea level → 0 ft
+
+      // ───── 3.  Calculate local barometric pressure (hPa) ──────────
+      const h_km       = alt_ft / FT_PER_KM;
+      const PB_torr    = Math.exp(6.63268 - 0.1112 * h_km - 0.00149 * h_km * h_km);
+      const P_local    = TORR2HPA * PB_torr;
+
+      // ───── 4.  Calculate equivalent altitude barometric pressure ──
+      const h_equiv_km = (equiv_alt_ft - OFFSET_FT) / FT_PER_KM;
+      const PB_equiv_torr = Math.exp(6.63268 - 0.1112 * h_equiv_km - 0.00149 * h_equiv_km * h_equiv_km);
+      const P_equiv    = TORR2HPA * PB_equiv_torr;
+
+      // ───── 5.  Solve for O₂ percentage ────────────────────────────
+      // From the original formula: h_equiv_ft = f(o2_pct * P_local / P0_HPA)
+      // We need: o2_pct = (P_equiv / P_local) * 20.9
+      const o2_pct = (P_equiv / P_local) * 20.9;
+
+      // ───── 6.  Round & output ──────────────────────────────────────
+      const o2_rounded = Math.round(o2_pct * 10) / 10;  // nearest 0.1%
+      document.getElementById("result").innerText = o2_rounded + "%";
+    }
+  </script>
+</head>
+<body>
+  <h1>Elevation & Equivalent Altitude to O₂ Calculator</h1>
+
+  <p>Enter the local site elevation (feet):</p>
+  <input type="number"
+         id="altitude"
+         placeholder="Local elevation in feet"
+         onkeypress="if(event.key==='Enter') calculateO2Percentage()">
+
+  <p>Enter the equivalent altitude (feet):</p>
+  <input type="number"
+         id="equiv_altitude"
+         placeholder="Equivalent altitude in feet"
+         onkeypress="if(event.key==='Enter') calculateO2Percentage()">
+
+  <button onclick="calculateO2Percentage()">Calculate</button>
+
+  <p>Required O₂ Percentage: <span id="result"></span></p>
+</body>
+</html>
