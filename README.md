@@ -25,13 +25,11 @@ Plan training at altitude or simulate altitude conditions:
 
 | Calculator | Description |
 |------------|-------------|
-| [Altitude to Oxygen Percentage](https://dbeatty10.github.io/altitude-calculator/altitude_to_o2_percentage.html) | Converts altitude in feet to effective oxygen percentage using atmospheric pressure calculations. |
-| [Oxygen Percentage to Altitude](https://dbeatty10.github.io/altitude-calculator/o2_percentage_to_altitude.html) | Converts effective oxygen percentage to equivalent altitude in feet. |
-| [Altitude-O₂ Equivalency Calculator](https://dbeatty10.github.io/altitude-calculator/altitude_o2_to_altitude.html) | Calculate equivalent altitude for 20.9% air based on measured altitude and oxygen percentage of gas mixture. |
-| [Elevation & Equivalent Altitude to O₂ Calculator](https://dbeatty10.github.io/altitude-calculator/elevation_equiv_to_o2.html) | Calculate required oxygen percentage to simulate a target altitude at your local elevation. Useful for Venturi entrainment mask jet percentage calculations. |
+| [Oxygen % to Elevation Calculator](https://dbeatty10.github.io/altitude-calculator/altitude_o2_to_altitude.html) | Calculate equivalent altitude for 20.9% air based on measured altitude and oxygen percentage of gas mixture. |
+| [Elevation to Equivalent Oxygen % Calculator](https://dbeatty10.github.io/altitude-calculator/elevation_equiv_to_o2.html) | Calculate required oxygen percentage based on local elevation and desired equivalent altitude. Useful for hypoxic tents ("live high") or Venturi entrainment mask jet percentage calculations ("train low"). |
 
 ## How to Use
 
 1. **Click a link above** to access the appropriate calculator.
-2. **Enter your data** (altitude in feet or oxygen percentage).
+2. **Enter your data**.
 3. **Get instant results**—no downloads or setup required!
