@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Formula Documentation - Altitude Calculator Suite</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --ink:#1b1f23; --muted:#6a737d; --brand:#007acc; }
+    body { font: 16px/1.55 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--ink); margin: 32px auto; max-width: 880px; padding: 0 20px; }
+    h1 { font-size: 1.9rem; margin: 0 0 0.5rem; color: var(--brand); text-align: center; }
+    h2 { font-size: 1.35rem; margin-top: 2.0rem; color: var(--brand); border-bottom: 2px solid var(--brand); padding-bottom: 5px; }
+    h3 { font-size: 1.05rem; margin-top: 1.4rem; color: #555; }
+    p  { margin: 0.6rem 0; }
+    code, kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 0.95em; }
+    pre { background:#f6f8fa; border:1px solid #e1e4e8; border-radius:6px; padding:14px; overflow:auto; }
+    .muted { color: var(--muted); }
+    .callout { border-left: 4px solid var(--brand); background:#f3f9ff; padding: 12px 14px; border-radius: 4px; }
+    ul { margin: 0.4rem 0 0.8rem 1.2rem; }
+    ol { margin: 0.4rem 0 0.8rem 1.2rem; }
+    .toc a { color: var(--brand); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .navigation { background: #e9ecef; padding: 15px; border-radius: 6px; margin-bottom: 30px; }
+    .navigation a { color: var(--brand); text-decoration: none; margin-right: 20px; }
+    .navigation a:hover { text-decoration: underline; }
+    .back-link { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
+    .back-link a { color: var(--brand); text-decoration: none; }
+    hr { border:0; border-top:1px solid #e1e4e8; margin: 24px 0; }
+  </style>
+</head>
+<body>
+  <div class="navigation">
+    <a href="index.html">← Back to Calculator Suite</a>
+    <a href="#big-picture">Overview</a>
+    <a href="#atmosphere-model">Atmospheric Model</a>
+    <a href="#equivalence">Equivalence Principle</a>
+    <a href="#constants">Constants</a>
+    <a href="#accuracy">Accuracy & Limitations</a>
+  </div>
+
+  <header>
+    <h1>Formula Documentation</h1>
+    <p class="muted">This page explains the logic and assumptions used by the two main calculators:
+      <em>Altitude-O₂ Equivalency Calculator</em> and <em>Elevation & Equivalent Altitude to O₂ Calculator</em>.
+    </p>
+  </header>
+
+  <nav class="toc">
+    <p><strong>On this page</strong></p>
+    <ul>
+      <li><a href="#big-picture">1) Big-picture goal</a></li>
+      <li><a href="#atmosphere-model">2) Atmosphere model (West's fit)</a></li>
+      <li><a href="#equivalence">3) Equivalence principle (partial pressure)</a></li>
+      <li><a href="#constants">4) Constants & conventions</a></li>
+      <li><a href="#offset">5) About the small sea-level offset</a></li>
+      <li><a href="#units">6) What the unit toggle does</a></li>
+      <li><a href="#accuracy">7) Accuracy, scope & limitations</a></li>
+      <li><a href="#mapping">8) Quick mapping from UI to math</a></li>
+    </ul>
+  </nav>
+
+  <section id="big-picture">
+    <h2>1) Big-picture goal</h2>
+    <p>Both tools match <strong>inspired oxygen partial pressure</strong> between two scenarios:</p>
+    <ul>
+      <li><strong>Calculator A (Altitude-from-O₂):</strong> Given your <em>site elevation</em> and a measured <em>O₂%</em> of a breathing mix, what altitude in normal air (≈ 20.9% O₂) gives the same inspired O₂?</li>
+      <li><strong>Calculator B (O₂-from-Altitudes):</strong> Given your <em>site elevation</em> and a <em>target equivalent altitude</em>, what O₂% is needed at your location to mimic that equivalent altitude?</li>
+    </ul>
+  </section>
+
+  <section id="atmosphere-model">
+    <h2>2) Atmosphere model (West’s fit)</h2>
+    <p>
+      We model barometric pressure as a function of geometric altitude using the empirical relation proposed by
+      <a href="https://journals.physiology.org/doi/abs/10.1152/jappl.1996.81.4.1850" target="_blank" rel="noopener noreferrer">J. B. West (1996)</a>
+      (<a href="https://pubmed.ncbi.nlm.nih.gov/8904608/" target="_blank" rel="noopener noreferrer">PubMed</a>), which fits model-atmosphere
+      data representative of tropical/summer conditions and is accurate to ~1% across high-mountain altitudes.
+    </p>
+
+    <pre><code>Let h be altitude in kilometres, P<sub>B</sub> in Torr (mmHg)
+  P<sub>B</sub> = exp( 6.63268 − 0.1112·h − 0.00149·h² )</code></pre>
+
+    <p><strong>Why this model?</strong></p>
+    <ul>
+      <li><strong>Accuracy and validation:</strong> It captures the curvature of the pressure–altitude curve (the <code>h²</code> term) and has been
+        validated against field data, e.g., on Everest 
+        (<a href="https://journals.physiology.org/doi/abs/10.1152/jappl.1999.86.3.1062" target="_blank" rel="noopener noreferrer">West 1999 abstract</a>,
+        <a href="https://journals.physiology.org/doi/pdf/10.1152/jappl.1999.86.3.1062" target="_blank" rel="noopener noreferrer">PDF</a>).</li>
+      <li><strong>Invertible:</strong> Rearranging yields a quadratic in <code>h</code>, so we can go directly from pressure → altitude without numerical iteration.</li>
+    </ul>
+
+    <p><strong>Unit notes used internally</strong></p>
+    <ul>
+      <li>Sea-level pressure <code>P0 = 1013.25 hPa</code> (760 Torr × 1.33322 hPa/Torr).</li>
+      <li>Conversions: <code>1 km = 3280.84 ft</code>, <code>1 Torr = 1.33322 hPa</code>.</li>
+    </ul>
+
+    <p class="muted">
+      For background on standard barometric formulas and lapse-rate assumptions, see
+      <a href="https://en.wikipedia.org/wiki/Barometric_formula" target="_blank" rel="noopener noreferrer">Barometric formula (overview)</a>.
+    </p>
+  </section>
+
+  <section id="how-pressures-are-measured">
+    <h2>2a) How are those pressures aloft measured?</h2>
+    <p>
+      Pressure–altitude relationships are grounded in <strong>upper-air observations</strong> from balloon-borne instruments
+      called <em>radiosondes</em>. Radiosondes directly measure <strong>pressure, temperature, and humidity</strong> as they ascend through
+      the atmosphere and transmit the data to ground stations.
+    </p>
+    <ul>
+      <li>NOAA/NWS overview of the upper-air program:
+        <a href="https://www.weather.gov/hnx/upperair" target="_blank" rel="noopener noreferrer">Upper Air Observations</a> and
+        <a href="https://www.noaa.gov/jetstream/upperair/radiosondes" target="_blank" rel="noopener noreferrer">Radiosondes</a>.</li>
+      <li>Fact sheet on radiosonde measurements:
+        <a href="https://www.weather.gov/upperair/factsheet" target="_blank" rel="noopener noreferrer">NWS Radiosonde Fact Sheet</a>.</li>
+      <li>Global archive of radiosonde data:
+        <a href="https://www.ncei.noaa.gov/products/weather-balloon/integrated-global-radiosonde-archive" target="_blank" rel="noopener noreferrer">NOAA IGRA</a>.</li>
+      <li>Instrumentation standards:
+        <a href="https://community.wmo.int/en/activity-areas/imop/wmo-no_8" target="_blank" rel="noopener noreferrer">WMO No. 8 — Guide to Instruments and Methods of Observation</a>
+        (see chapters on pressure, humidity, and radiosondes).</li>
+    </ul>
+    <p class="muted">
+      For a concise primer, see also
+      <a href="https://en.wikipedia.org/wiki/Radiosonde" target="_blank" rel="noopener noreferrer">Radiosonde (Wikipedia)</a>.
+    </p>
+  </section>
+
+  <section id="equivalence">
+    <h2>3) Equivalence principle (partial pressure)</h2>
+    <p>We equate inspired O₂ partial pressures:</p>
+    <pre><code>FiO2 · P<sub>local</sub>  =  0.209 · P<sub>equiv</sub></code></pre>
+    <ul>
+      <li><strong>Calculator A (Altitude-from-O₂):</strong> You enter <em>site elevation</em> and <em>O₂%</em>. We compute <code>P<sub>local</sub></code> via West's relation, solve for <code>P<sub>equiv</sub> = (FiO2/0.209) · P<sub>local</sub></code>, then invert West's relation to get the <strong>equivalent altitude</strong>.</li>
+      <li><strong>Calculator B (O₂-from-Altitudes):</strong> You enter <em>site elevation</em> and <em>equivalent altitude</em>. We compute both pressures via West's relation and solve directly:
+        <pre><code>FiO2 = 0.209 · ( P<sub>equiv</sub> / P<sub>local</sub> )</code></pre>
+      </li>
+    </ul>
+    <div class="callout">
+      <strong>Dry-air convention:</strong> We treat air as dry. Humidity displaces O₂/N₂ and reduces the volumetric O₂% slightly, but the dry-air convention keeps results consistent and is customary for altitude-equivalency tools.
+    </div>
+  </section>
+
+  <section id="constants">
+    <h2>4) Constants & conventions</h2>
+    <ul>
+      <li><strong>Sea-level pressure:</strong> <code>1013.25 hPa</code> everywhere (we do not use 1013.5).</li>
+      <li><strong>Normoxic O₂ reference in UI:</strong> <code>20.9%</code> (canonical one-decimal rounding). Using <code>20.95%</code> internally changes results by only a few feet; consistency matters more than which near-identical value you pick.</li>
+      <li><strong>Display rounding:</strong> results shown to users are rounded to <strong>100 ft</strong> (imperial) or <strong>50 m</strong> (metric) to reflect real-world variability and keep the readout tidy.</li>
+      <li><strong>Input validation:</strong> altitudes limited to 0–60,000 ft (~0–18,300 m).</li>
+    </ul>
+  </section>
+
+  <section id="o2-decimals">
+    <h2>5) “Normal” O₂%: what we use, and what difference it makes</h2>
+    <p>
+      These calculators adopt the dry-air oxygen fraction of <strong>20.9%</strong> (one-decimal convention) as the normoxic reference in both directions of the math.
+      We do <em>not</em> use 21.0%, 20.95%, or
+      <a href="https://en.wikipedia.org/wiki/Density_of_air#Composition" target="_blank" rel="noopener noreferrer">20.946% (IUPAC)</a>
+      inside the calculations. The choice is deliberate: 20.9% keeps the UI familiar and the code simple, while keeping numerical differences
+      well below the resolution we display.
+    </p>
+
+    <div class="callout">
+      <p><strong>Dry-air convention.</strong> All references here are by volume for <em>dry</em> air. Humidity displaces O₂/N₂ and lowers the measured volumetric O₂%,
+        but we use dry-air values to keep altitude equivalence consistent.</p>
+    </div>
+
+    <h3>What if we had used a different “normal” O₂%?</h3>
+    <p>
+      Changing the reference O₂% slightly rescales the internal pressure equivalence (<code>P<sub>equiv</sub> = P<sub>local</sub> × FiO2 / O2<sub>ref</sub></code>),
+      which then nudges the reported equivalent altitude. The table below shows the effect if we <em>kept your FiO₂ input the same</em> but hypothetically used a different reference value instead of 20.9%:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Hypothetical O₂<sub>ref</sub></th>
+          <th>Sea level (0 ft)</th>
+          <th>10,000 ft (3,048 m)</th>
+          <th>Direction of change</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>20.95%</strong></td>
+          <td>≈ <strong>+71 ft</strong></td>
+          <td>≈ <strong>+65 ft</strong></td>
+          <td>Higher reference → slightly <em>higher</em> equivalent altitude</td>
+        </tr>
+        <tr>
+          <td><strong><a href="https://en.wikipedia.org/wiki/Density_of_air#Composition" target="_blank" rel="noopener noreferrer">20.946% (IUPAC)</a></strong></td>
+          <td>≈ <strong>+65 ft</strong></td>
+          <td>≈ <strong>+60 ft</strong></td>
+          <td>Higher reference → slightly <em>higher</em> equivalent altitude</td>
+        </tr>
+        <tr>
+          <td><strong>21.0%</strong></td>
+          <td>≈ <strong>+141 ft</strong></td>
+          <td>≈ <strong>+130 ft</strong></td>
+          <td>Higher reference → slightly <em>higher</em> equivalent altitude</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="muted"><small>
+      Notes: (1) The figures above are typical biases relative to the calculators’ 20.9% baseline when the same FiO₂ and site elevation are used; they arise from the
+      West pressure–altitude inversion. (2) Exact numbers vary slightly with altitude because the curve includes an <code>h²</code> term. (3) If you prefer the full
+      <a href="https://en.wikipedia.org/wiki/Density_of_air#Composition" target="_blank" rel="noopener noreferrer">IUPAC 20.946%</a> value for metrological traceability, the effect is still small in practice.
+    </small></p>
+
+    <h3>Impact on the O₂-from-Altitudes calculator</h3>
+    <p>
+      When solving for required O₂% from two altitudes, using a different reference simply scales the answer:
+    </p>
+    <ul>
+      <li>Using <em>20.95%</em> instead of <strong>20.9%</strong> multiplies FiO₂ by <code>20.95 / 20.9 ≈ 1.00239</code> (≈ <strong>+0.24%</strong> relative).</li>
+      <li>Using <em>21.0%</em> gives <code>21.0 / 20.9 ≈ 1.00478</code> (≈ <strong>+0.48%</strong> relative).</li>
+      <li>Using the full <a href="https://en.wikipedia.org/wiki/Density_of_air#Composition" target="_blank" rel="noopener noreferrer">IUPAC 20.946%</a> gives
+        <code>20.946 / 20.9 ≈ 1.00220</code> (≈ <strong>+0.22%</strong> relative).</li>
+    </ul>
+
+    <p><strong>Bottom line:</strong> We standardize on <strong>20.9%</strong> for normoxic dry air. Picking 20.95% or the
+      <a href="https://en.wikipedia.org/wiki/Density_of_air#Composition" target="_blank" rel="noopener noreferrer">IUPAC 20.946%</a> would shift equivalent-altitude outputs upward by roughly 60–70 ft and increase required-O₂ results by ~0.22–0.24% relative; using 21.0% roughly doubles those small shifts.</p>
+  </section>
+  
+  <section id="offset">
+    <h2>5) About the small sea-level offset</h2>
+    <p>You'll see a constant like <code>OFFSET_FT = -28</code> in the code near the West inversion. This "nudge" ensures that when the inner logarithm corresponds to sea level, the output displays exactly <strong>0 ft</strong> despite tiny rounding in constants/conversions.</p>
+    <ul>
+      <li>In <strong>Calculator A</strong>, the offset is applied after solving for equivalent altitude (so sea-level inputs → 0 ft).</li>
+      <li>In <strong>Calculator B</strong>, we remove the same offset when converting the user's equivalent altitude back to pressure, keeping the two tools symmetric.</li>
+    </ul>
+    <p><em>Prefer no offset?</em> You can algebraically normalize the log term so it evaluates to <code>ln(760 Torr)</code> exactly at the sea-level reference and/or keep constants at higher precision; then the offset can be removed with no change to user-visible behavior.</p>
+  </section>
+
+  <section id="units">
+    <h2>6) What the unit toggle does</h2>
+    <ul>
+      <li>Changes input prompts and output units (feet ↔ metres).</li>
+      <li>Internally, we compute using feet for altitude and hPa/Torr for pressure, converting at the edges.</li>
+      <li>Your preference is saved with <code>localStorage</code> so it persists between visits.</li>
+    </ul>
+  </section>
+
+  <section id="accuracy">
+    <h2>7) Accuracy, scope & limitations</h2>
+    <ul>
+      <li>Intended for training, mountaineering, and hypoxic-room planning—not aviation navigation or clinical diagnosis.</li>
+      <li>West's relation is an average atmosphere. Weather (temperature profile, pressure anomalies) can shift true pressures by a few hPa—equivalent to tens to a couple hundred feet.</li>
+      <li>We assume dry air and do not apply the alveolar gas equation (no corrections for water vapour or CO₂). If you need alveolar <code>P<sub>A</sub>O₂</code>, that's a different calculator.</li>
+    </ul>
+  </section>
+
+  <section id="mapping">
+    <h2>8) Quick mapping from UI to math</h2>
+
+    <h3>A) Altitude-O₂ Equivalency Calculator</h3>
+    <ol>
+      <li>Input: site elevation, measured O₂% of breathing mix.</li>
+      <li>Compute site pressure <code>P<sub>local</sub></code> from West's relation.</li>
+      <li>Compute <code>P<sub>equiv</sub> = (FiO2/0.209) × P<sub>local</sub></code>.</li>
+      <li>Invert West's relation (quadratic) to get equivalent altitude; apply friendly rounding.</li>
+    </ol>
+
+    <h3>B) Elevation & Equivalent Altitude → O₂ Calculator</h3>
+    <ol>
+      <li>Input: site elevation, target equivalent altitude.</li>
+      <li>Compute <code>P<sub>local</sub></code> and <code>P<sub>equiv</sub></code> from West's relation.</li>
+      <li>Solve <code>FiO2 = 0.209 × (P<sub>equiv</sub> / P<sub>local</sub>)</code>; round to a user-friendly value.</li>
+    </ol>
+  </section>
+
+  <hr />
+  <p class="muted">This document explains the logic only; see source files for exact implementations.</p>
+  
+  <div class="back-link">
+    <a href="index.html">← Back to Calculator Suite</a>
+  </div>
+</body>
+</html>
